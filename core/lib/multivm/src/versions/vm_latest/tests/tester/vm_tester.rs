@@ -5,7 +5,6 @@ use zksync_types::{
     block::L2BlockHasher,
     fee_model::BatchFeeInput,
     get_code_key, get_is_account_key,
-    helpers::unix_timestamp_ms,
     utils::{deployed_address_create, storage_key_for_eth_balance},
     Address, L1BatchNumber, L2BlockNumber, L2ChainId, Nonce, ProtocolVersionId, U256,
 };
@@ -248,7 +247,7 @@ impl<H: HistoryMode> VmTesterBuilder<H> {
 }
 
 pub(crate) fn default_l1_batch(number: L1BatchNumber) -> L1BatchEnv {
-    let timestamp = unix_timestamp_ms();
+    let timestamp = 0xdeedf00daaaabbbb;
     L1BatchEnv {
         previous_batch_hash: None,
         number,

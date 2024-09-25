@@ -2,8 +2,8 @@ use zksync_contracts::BaseSystemContracts;
 use zksync_test_account::Account;
 use zksync_types::{
     block::L2BlockHasher, fee_model::BatchFeeInput, get_code_key, get_is_account_key,
-    helpers::unix_timestamp_ms, utils::storage_key_for_eth_balance, Address, L1BatchNumber,
-    L2BlockNumber, L2ChainId, ProtocolVersionId, U256,
+    utils::storage_key_for_eth_balance, Address, L1BatchNumber, L2BlockNumber, L2ChainId,
+    ProtocolVersionId, U256,
 };
 use zksync_utils::{bytecode::hash_bytecode, u256_to_h256};
 
@@ -25,7 +25,7 @@ pub(super) fn default_system_env() -> SystemEnv {
 }
 
 pub(super) fn default_l1_batch(number: L1BatchNumber) -> L1BatchEnv {
-    let timestamp = unix_timestamp_ms();
+    let timestamp = 0xdeedf00daaaabbbb;
     L1BatchEnv {
         previous_batch_hash: None,
         number,

@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use once_cell::sync::OnceCell;
-use zksync_types::{Address, Execute};
+use zksync_test_account::Account;
+use zksync_types::{Address, Execute, K256PrivateKey, H256};
 
 use crate::{
     interface::{TxExecutionMode, VmExecutionMode, VmInterface},
@@ -56,10 +57,12 @@ fn test_max_depth() {
 #[test]
 fn test_basic_behavior() {
     let contarct = read_test_contract();
-    let address = Address::random();
+    let address = Address::from_low_u64_le(0x1c7264e2bd8d2d84);
     let mut vm = VmTesterBuilder::new(HistoryEnabled)
         .with_empty_in_memory_storage()
-        .with_random_rich_accounts(1)
+        .with_rich_accounts(vec![Account::new(
+            K256PrivateKey::from_bytes(H256::from([1; 32])).unwrap(),
+        )])
         .with_deployer()
         .with_bootloader_gas_limit(BATCH_COMPUTATIONAL_GAS_LIMIT)
         .with_execution_mode(TxExecutionMode::VerifyExecute)
