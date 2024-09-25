@@ -3,10 +3,10 @@ use std::marker::PhantomData;
 use zksync_contracts::BaseSystemContracts;
 use zksync_types::{
     block::L2BlockHasher,
-    fee_model::BatchFeeInput,
     get_code_key, get_is_account_key,
     utils::{deployed_address_create, storage_key_for_eth_balance},
-    Address, L1BatchNumber, L2BlockNumber, L2ChainId, Nonce, ProtocolVersionId, U256,
+    Address, K256PrivateKey, L1BatchNumber, L2BlockNumber, L2ChainId, Nonce, ProtocolVersionId,
+    H256, U256,
 };
 use zksync_utils::{bytecode::hash_bytecode, u256_to_h256};
 
@@ -16,6 +16,7 @@ use crate::{
         L1BatchEnv, L2Block, L2BlockEnv, SystemEnv, TxExecutionMode, VmExecutionMode, VmFactory,
         VmInterface, VmInterfaceExt,
     },
+    versions::testonly::default_l1_batch,
     vm_latest::{
         constants::BATCH_COMPUTATIONAL_GAS_LIMIT,
         tests::{
@@ -205,7 +206,13 @@ impl<H: HistoryMode> VmTesterBuilder<H> {
     }
 
     pub(crate) fn with_deployer(mut self) -> Self {
-        let deployer = Account::random();
+        let deployer = Account::new(
+            K256PrivateKey::from_bytes(H256::from([
+                166, 213, 235, 115, 15, 141, 58, 10, 160, 63, 84, 199, 169, 24, 185, 226, 57, 199,
+                123, 116, 220, 99, 23, 83, 227, 247, 27, 37, 165, 2, 47, 222,
+            ]))
+            .unwrap(),
+        );
         self.deployer = Some(deployer);
         self
     }
@@ -243,27 +250,6 @@ impl<H: HistoryMode> VmTesterBuilder<H> {
             custom_contracts: self.custom_contracts.clone(),
             _phantom: PhantomData,
         }
-    }
-}
-
-pub(crate) fn default_l1_batch(number: L1BatchNumber) -> L1BatchEnv {
-    let timestamp = 0xdeedf00daaaabbbb;
-    L1BatchEnv {
-        previous_batch_hash: None,
-        number,
-        timestamp,
-        fee_input: BatchFeeInput::l1_pegged(
-            50_000_000_000, // 50 gwei
-            250_000_000,    // 0.25 gwei
-        ),
-        fee_account: Address::random(),
-        enforced_base_fee: None,
-        first_l2_block: L2BlockEnv {
-            number: 1,
-            timestamp,
-            prev_block_hash: L2BlockHasher::legacy_hash(L2BlockNumber(0)),
-            max_virtual_blocks_to_create: 100,
-        },
     }
 }
 

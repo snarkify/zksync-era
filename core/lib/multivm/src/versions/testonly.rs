@@ -3,7 +3,7 @@ use zksync_test_account::Account;
 use zksync_types::{
     block::L2BlockHasher, fee_model::BatchFeeInput, get_code_key, get_is_account_key,
     utils::storage_key_for_eth_balance, Address, L1BatchNumber, L2BlockNumber, L2ChainId,
-    ProtocolVersionId, U256,
+    ProtocolVersionId, H160, U256,
 };
 use zksync_utils::{bytecode::hash_bytecode, u256_to_h256};
 
@@ -34,7 +34,9 @@ pub(super) fn default_l1_batch(number: L1BatchNumber) -> L1BatchEnv {
             50_000_000_000, // 50 gwei
             250_000_000,    // 0.25 gwei
         ),
-        fee_account: Address::random(),
+        fee_account: Address::from(H160::from([
+            171, 255, 100, 126, 1, 76, 255, 237, 78, 76, 161, 0, 18, 6, 192, 49, 17, 18, 232, 29,
+        ])),
         enforced_base_fee: None,
         first_l2_block: L2BlockEnv {
             number: 1,
