@@ -12,7 +12,7 @@ use zksync_utils::{bytecode::hash_bytecode, u256_to_h256};
 
 use crate::{
     interface::{
-        storage::{InMemoryStorage, StoragePtr, StorageView, WriteStorage},
+        storage::{InMemoryStorage, StoragePtr, StorageView},
         L1BatchEnv, L2Block, L2BlockEnv, SystemEnv, TxExecutionMode, VmExecutionMode, VmFactory,
         VmInterface, VmInterfaceExt,
     },
@@ -60,7 +60,15 @@ impl<H: HistoryMode> VmTester<H> {
     }
 
     pub(crate) fn reset_with_empty_storage(&mut self) {
-        self.storage = StorageView::new(get_empty_storage()).to_rc_ptr();
+        let mut raw_storage = get_empty_storage();
+        for account in self.rich_accounts.iter() {
+            make_account_rich(&mut raw_storage, account);
+        }
+        if let Some(deployer) = &self.deployer {
+            make_account_rich(&mut raw_storage, deployer);
+        }
+        self.storage = StorageView::new(raw_storage).to_rc_ptr();
+
         self.reset_state(false);
     }
 
@@ -70,10 +78,6 @@ impl<H: HistoryMode> VmTester<H> {
     pub(crate) fn reset_state(&mut self, use_latest_l2_block: bool) {
         for account in self.rich_accounts.iter_mut() {
             account.nonce = Nonce(0);
-            make_account_rich(self.storage.clone(), account);
-        }
-        if let Some(deployer) = &self.deployer {
-            make_account_rich(self.storage.clone(), deployer);
         }
 
         if !self.custom_contracts.is_empty() {
@@ -229,15 +233,16 @@ impl<H: HistoryMode> VmTesterBuilder<H> {
 
         let mut raw_storage = self.storage.unwrap_or_else(get_empty_storage);
         insert_contracts(&mut raw_storage, &self.custom_contracts);
-        let storage_ptr = StorageView::new(raw_storage).to_rc_ptr();
+
         for account in self.rich_accounts.iter() {
-            make_account_rich(storage_ptr.clone(), account);
+            make_account_rich(&mut raw_storage, account);
         }
         if let Some(deployer) = &self.deployer {
-            make_account_rich(storage_ptr.clone(), deployer);
+            make_account_rich(&mut raw_storage, deployer);
         }
         let fee_account = l1_batch_env.fee_account;
 
+        let storage_ptr = StorageView::new(raw_storage).to_rc_ptr();
         let vm = Vm::new(l1_batch_env, self.system_env, storage_ptr.clone());
 
         VmTester {
@@ -253,12 +258,9 @@ impl<H: HistoryMode> VmTesterBuilder<H> {
     }
 }
 
-pub(crate) fn make_account_rich(storage: StoragePtr<InMemoryStorageView>, account: &Account) {
+pub fn make_account_rich(storage: &mut InMemoryStorage, account: &Account) {
     let key = storage_key_for_eth_balance(&account.address);
-    storage
-        .as_ref()
-        .borrow_mut()
-        .set_value(key, u256_to_h256(U256::from(10u64.pow(19))));
+    storage.set_value(key, u256_to_h256(U256::from(10u64.pow(19))));
 }
 
 pub(crate) fn get_empty_storage() -> InMemoryStorage {
