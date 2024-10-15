@@ -12,7 +12,6 @@ fee_account: '0x0000000000000000000000000000000000000001'
 prover:
   recursion_scheduler_level_vk_hash: 0x14f97b81e54b35fe673d8708cc1a19e1ea5b5e348e12d31e39824ed4f42bbca2
   dummy_verifier: true
-genesis_protocol_semantic_version: 0.25.0
 l1_batch_commit_data_generator_mode: Rollup
-# Uncomment to enable EVM simulation (requires to run genesis)
-evm_simulator_hash: 0x01000cc9566d1d6e6634f8e79c42e5cd86de12e4b9a9af069ffe49bf10ab0ab6
+# Uncomment to enable EVM emulation (requires to run genesis)
+evm_emulator_hash: 0x01000cc9566d1d6e6634f8e79c42e5cd86de12e4b9a9af069ffe49bf10ab0ab6
