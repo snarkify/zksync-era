@@ -91,6 +91,10 @@ impl L2BlockUpdates {
         new_known_factory_deps: HashMap<H256, Vec<u8>>,
         call_traces: Vec<Call>,
     ) {
+        tracing::warn!(
+            "new_known_factory_deps_len = {}",
+            new_known_factory_deps.len()
+        );
         let saved_factory_deps =
             extract_bytecodes_marked_as_known(&tx_execution_result.logs.events);
         self.events.extend(tx_execution_result.logs.events);
