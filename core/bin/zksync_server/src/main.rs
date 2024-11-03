@@ -196,6 +196,5 @@ fn load_env_config() -> anyhow::Result<TempConfigStore> {
         external_proof_integration_api_config: ExternalProofIntegrationApiConfig::from_env().ok(),
         experimental_vm_config: ExperimentalVmConfig::from_env().ok(),
         prover_job_monitor_config: None,
-        l1_recovery: None,
     })
 }

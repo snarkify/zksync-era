@@ -46,7 +46,6 @@ impl ProtoRepr for proto::GeneralConfig {
             ),
             experimental_vm_config: read_optional_repr(&self.experimental_vm),
             prover_job_monitor_config: read_optional_repr(&self.prover_job_monitor),
-            l1_recovery: read_optional_repr(&self.l1_recovery),
         })
     }
 
@@ -107,7 +106,6 @@ impl ProtoRepr for proto::GeneralConfig {
                 .prover_job_monitor_config
                 .as_ref()
                 .map(ProtoRepr::build),
-            l1_recovery: this.l1_recovery.as_ref().map(ProtoRepr::build),
         }
     }
 }
