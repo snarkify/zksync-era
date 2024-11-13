@@ -1,0 +1,20 @@
+[package]
+name = "snarkify_prover"
+description = "Client library to interact with Snarkify Cloud API"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+reqwest.workspace = true
+reqwest-middleware.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+reqwest-retry = "0.7.0"
+anyhow.workspace = true
+async-trait.workspace = true
+http = "1.1.0"
+log.workspace = true
+circuit_definitions = { workspace = true, features = ["log_tracing"] }
+chrono.workspace = true
+zksync_prover_keystore = { workspace = true, features = ["gpu"] }
+zksync_prover_fri_types.workspace = true

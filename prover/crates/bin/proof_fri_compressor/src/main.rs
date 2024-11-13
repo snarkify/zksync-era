@@ -5,6 +5,7 @@ use std::{env, time::Duration};
 
 use anyhow::Context as _;
 use clap::Parser;
+use snarkify_prover::{CloudProverConfig, SnarkifyProver};
 use tokio::sync::{oneshot, watch};
 use zksync_core_leftovers::temp_config_store::{load_database_secrets, load_general_config};
 use zksync_env_config::object_store::ProverObjectStoreConfig;
@@ -76,6 +77,16 @@ async fn main() -> anyhow::Result<()> {
         .expect("ProverConfig doesn't exist");
     let keystore =
         Keystore::locate().with_setup_path(Some(prover_config.setup_data_path.clone().into()));
+
+    // Snarkify
+    let cfg = CloudProverConfig {
+        base_url: "TODO".to_string(),
+        api_key: "TODO".to_string(),
+        retry_count: 0,
+        retry_wait_time_sec: 0,
+        connection_timeout_sec: 0,
+    };
+    let snarkify_prover = SnarkifyProver::new(cfg, "service_id".to_string());
     let proof_compressor = ProofCompressor::new(
         blob_store,
         pool,
@@ -83,6 +94,7 @@ async fn main() -> anyhow::Result<()> {
         config.max_attempts,
         protocol_version,
         keystore,
+        snarkify_prover
     );
 
     let (stop_sender, stop_receiver) = watch::channel(false);

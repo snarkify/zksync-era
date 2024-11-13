@@ -1,11 +1,21 @@
-use std::{sync::Arc, time::Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use anyhow::Context as _;
 use async_trait::async_trait;
 use circuit_sequencer_api::proof::FinalProof;
+use snarkify_prover::{
+    types::{
+        CompressionInput, CreateTaskRequest, CreateTaskResponse, GetTaskResponse, ProofType,
+        TaskState,
+    },
+    SnarkifyProver,
+};
 use tokio::task::JoinHandle;
 #[cfg(feature = "gpu")]
-use wrapper_prover::{Bn256, GPUWrapperConfigs, WrapperProver, DEFAULT_WRAPPER_CONFIG};
+use wrapper_prover::{GPUWrapperConfigs, WrapperProver, DEFAULT_WRAPPER_CONFIG};
 #[cfg(not(feature = "gpu"))]
 use zkevm_test_harness::proof_wrapper_utils::WrapperConfig;
 #[allow(unused_imports)]
@@ -36,6 +46,7 @@ pub struct ProofCompressor {
     max_attempts: u32,
     protocol_version: ProtocolSemanticVersion,
     keystore: Keystore,
+    snarkify_prover: SnarkifyProver,
 }
 
 impl ProofCompressor {
@@ -46,6 +57,7 @@ impl ProofCompressor {
         max_attempts: u32,
         protocol_version: ProtocolSemanticVersion,
         keystore: Keystore,
+        snarkify_prover: SnarkifyProver,
     ) -> Self {
         Self {
             blob_store,
@@ -54,14 +66,16 @@ impl ProofCompressor {
             max_attempts,
             protocol_version,
             keystore,
+            snarkify_prover,
         }
     }
 
-    #[tracing::instrument(skip(proof, _compression_mode))]
-    pub fn compress_proof(
+    #[tracing::instrument(skip(proof, _compression_mode, snarkify_prover))]
+    pub async fn compress_proof(
         proof: ZkSyncRecursionLayerProof,
         _compression_mode: u8,
         keystore: Keystore,
+        snarkify_prover: SnarkifyProver,
     ) -> anyhow::Result<FinalProof> {
         let scheduler_vk = keystore
             .load_recursive_layer_verification_key(
@@ -71,8 +85,38 @@ impl ProofCompressor {
 
         #[cfg(feature = "gpu")]
         let wrapper_proof = {
-            let crs = get_trusted_setup();
+            let crs = get_trusted_setup(); // read from local file system
             let wrapper_config = DEFAULT_WRAPPER_CONFIG;
+
+            // snarkify begin
+            let req = CreateTaskRequest {
+                input: CompressionInput {
+                    proof: proof.clone().into_inner(),
+                    scheduler_vk: scheduler_vk.clone(),
+                },
+                proof_type: ProofType::Batch,
+            };
+            snarkify_prover.post_with_token::<CreateTaskRequest<CompressionInput>, CreateTaskResponse>("tasks", &req).await?;
+
+            loop {
+                match snarkify_prover
+                    .get_with_token::<GetTaskResponse>("tasks/[TASK_ID]")
+                    .await
+                {
+                    Ok(res) => {
+                        if res.state == TaskState::Success {
+                            // deserialize res.proof to FinalProof
+                            break;
+                        }
+                    }
+                    Err(_) => {
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        continue;
+                    }
+                }
+            }
+            // snarkify end
+
             let mut prover = WrapperProver::<GPUWrapperConfigs>::new(&crs, wrapper_config).unwrap();
 
             prover
@@ -176,7 +220,10 @@ impl JobProcessor for ProofCompressor {
     ) -> JoinHandle<anyhow::Result<Self::JobArtifacts>> {
         let compression_mode = self.compression_mode;
         let keystore = self.keystore.clone();
-        tokio::task::spawn_blocking(move || Self::compress_proof(job, compression_mode, keystore))
+        let snarkify_prover_clone = self.snarkify_prover.clone();
+        tokio::task::spawn(async move {
+            Self::compress_proof(job, compression_mode, keystore, snarkify_prover_clone).await
+        })
     }
 
     async fn save_result(

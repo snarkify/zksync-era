@@ -5,6 +5,12 @@ use shivini::{
     gpu_proof_config::GpuProofConfig, gpu_prove_from_external_witness_data, ProverContext,
     ProverContextConfig,
 };
+use snarkify_prover::{
+    types::{
+        CreateTaskRequest, CreateTaskResponse, GetTaskResponse, ProofType, ProveInput, TaskState,
+    },
+    SnarkifyProver,
+};
 use tokio::{sync::mpsc::Receiver, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 use zkevm_test_harness::prover_utils::{verify_base_layer_proof, verify_recursion_layer_proof};
@@ -46,6 +52,8 @@ pub struct CircuitProver {
     receiver: Receiver<WitnessVectorArtifactsTemp>,
     /// Setup Data used for proving & proof verification
     setup_data_cache: SetupDataCache,
+    // Snarkify prover
+    snarkify_prover: SnarkifyProver,
 }
 
 impl CircuitProver {
@@ -56,6 +64,7 @@ impl CircuitProver {
         receiver: Receiver<WitnessVectorArtifactsTemp>,
         max_allocation: Option<usize>,
         setup_data_cache: SetupDataCache,
+        snarkify_prover: SnarkifyProver,
     ) -> anyhow::Result<(Self, ProverContext)> {
         // VRAM allocation
         let prover_context = match max_allocation {
@@ -72,6 +81,7 @@ impl CircuitProver {
                 protocol_version,
                 receiver,
                 setup_data_cache,
+                snarkify_prover,
             },
             prover_context,
         ))
@@ -121,9 +131,11 @@ impl CircuitProver {
                 "failed to get setup data for key {setup_data_key:?}"
             ))?
             .clone();
+        let snarkify_prover_clone = self.snarkify_prover.clone();
         let task = tokio::task::spawn_blocking(move || {
             let _span = tracing::info_span!("prove_circuit_proof", %block_number).entered();
-            Self::prove_circuit_proof(artifact, setup_data).context("failed to prove circuit")
+            Self::prove_circuit_proof(artifact, setup_data, snarkify_prover_clone)
+                .context("failed to prove circuit")
         });
 
         self.finish_task(
@@ -157,6 +169,7 @@ impl CircuitProver {
     pub fn prove_circuit_proof(
         witness_vector_artifacts: WitnessVectorArtifactsTemp,
         setup_data: Arc<GoldilocksGpuProverSetupData>,
+        snarkify_prover: SnarkifyProver,
     ) -> anyhow::Result<ProverArtifacts> {
         let time = Instant::now();
         let WitnessVectorArtifactsTemp {
@@ -168,6 +181,45 @@ impl CircuitProver {
         let job_id = prover_job.job_id;
         let circuit_wrapper = prover_job.circuit_wrapper;
         let block_number = prover_job.block_number;
+
+        // snarkify begin
+        let req = CreateTaskRequest {
+            input: ProveInput {
+                circuit: circuit_wrapper.clone(),
+                witness_vector: witness_vector.clone(),
+                setup_data: setup_data.clone(),
+            },
+            proof_type: ProofType::Batch,
+        };
+
+        // Run snarkify async function in tokio runtime to avoid changing this function to async.
+        let rt = tokio::runtime::Runtime::new()?;
+        rt.block_on(async {
+            snarkify_prover
+                .post_with_token::<CreateTaskRequest<ProveInput>, CreateTaskResponse>("tasks", &req)
+                .await
+        })?;
+
+        loop {
+            let res = rt.block_on(async {
+                snarkify_prover
+                    .get_with_token::<GetTaskResponse>("tasks/[TASK_ID]")
+                    .await
+            });
+
+            match res {
+                Ok(res) => {
+                    if res.state == TaskState::Success {
+                        // deserialize res.proof to FinalProof
+                        break;
+                    }
+                }
+                Err(_) => {
+                    continue;
+                }
+            }
+        }
+        // snarkify end
 
         let (proof, circuit_id) =
             Self::generate_proof(&circuit_wrapper, witness_vector, &setup_data)

@@ -41,6 +41,9 @@ serde_json.workspace = true
 serde = { workspace = true, features = ["derive"] }
 wrapper_prover = { workspace = true, optional = true }
 
+# snarkify
+snarkify_prover.workspace = true
+
 [features]
 default = []
 gpu = ["wrapper_prover"]

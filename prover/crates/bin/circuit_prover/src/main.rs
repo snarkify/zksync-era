@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::Context as _;
 use clap::Parser;
+use snarkify_prover::{CloudProverConfig, SnarkifyProver};
 use tokio_util::sync::CancellationToken;
 use zksync_circuit_prover::{
     Backoff, CircuitProver, FinalizationHintsCache, SetupDataCache, WitnessVectorGenerator,
@@ -85,6 +86,16 @@ async fn main() -> anyhow::Result<()> {
         ));
     }
 
+    // Snarkify
+    let cfg = CloudProverConfig {
+        base_url: "TODO".to_string(),
+        api_key: "TODO".to_string(),
+        retry_count: 0,
+        retry_wait_time_sec: 0,
+        connection_timeout_sec: 0,
+    };
+    let snarkify_prover = SnarkifyProver::new(cfg, "service_id".to_string());
+
     // NOTE: Prover Context is the way VRAM is allocated. If it is dropped, the claim on VRAM allocation is dropped as well.
     // It has to be kept until prover dies. Whilst it may be kept in prover struct, during cancellation, prover can `drop`, but the thread doing the processing can still be alive.
     // This setup prevents segmentation faults and other nasty behavior during shutdown.
@@ -95,6 +106,7 @@ async fn main() -> anyhow::Result<()> {
         receiver,
         opt.max_allocation,
         setup_data_cache,
+        snarkify_prover,
     )
     .context("failed to create circuit prover")?;
     tasks.push(tokio::spawn(prover.run(cancellation_token.clone())));
