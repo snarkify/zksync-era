@@ -6,7 +6,7 @@ use shivini::{
     ProverContextConfig,
 };
 use snarkify_prover::{
-    types::{ProofType, ProveInput, TaskResponse, TaskState},
+    types::{ProofType, ProveInput, TaskState},
     Prover as SnarkifyProver,
 };
 use tokio::{sync::mpsc::Receiver, task::JoinHandle};
