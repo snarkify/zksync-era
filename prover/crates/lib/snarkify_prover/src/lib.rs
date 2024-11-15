@@ -8,6 +8,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+use types::{CreateTaskRequest, ProofType, ProveInput, TaskResponse};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -50,7 +51,8 @@ impl Prover {
             .map_err(|e| anyhow::anyhow!("Failed to parse URL '{}': {}", full_url, e))
     }
 
-    pub async fn get_with_token<Resp>(&self, method: &str) -> anyhow::Result<Resp>
+    /// Generic function all GET methods
+    async fn get_with_token<Resp>(&self, method: &str) -> anyhow::Result<Resp>
     where
         Resp: serde::de::DeserializeOwned,
     {
@@ -78,7 +80,8 @@ impl Prover {
         serde_json::from_str(&response_body).map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn post_with_token<Req, Resp>(&self, method: &str, req: &Req) -> anyhow::Result<Resp>
+    /// Generic function all POST methods
+    async fn post_with_token<Req, Resp>(&self, method: &str, req: &Req) -> anyhow::Result<Resp>
     where
         Req: ?Sized + Serialize,
         Resp: serde::de::DeserializeOwned,
@@ -108,5 +111,29 @@ impl Prover {
         log::info!("[Snarkify Client], {method}, received response");
         log::debug!("[Snarkify Client], {method}, response: {response_body}");
         serde_json::from_str(&response_body).map_err(|e| anyhow::anyhow!(e))
+    }
+
+    /// Create a new task on a service
+    pub async fn create_task<Resp: serde::de::DeserializeOwned, Input: Serialize>(
+        &self,
+        service_id: &str,
+        input: Input,
+    ) -> anyhow::Result<TaskResponse> {
+        let req = CreateTaskRequest {
+            service_id: service_id.to_string(),
+            input: input,
+            proof_type: ProofType::Batch,
+        };
+
+        self.post_with_token::<CreateTaskRequest<Input>, TaskResponse>("tasks", &req)
+            .await
+    }
+
+    pub async fn get_task<Resp: serde::de::DeserializeOwned>(
+        &self,
+        task_id: &str,
+    ) -> anyhow::Result<TaskResponse> {
+        self.get_with_token::<TaskResponse>(format!("tasks/{task_id}").as_str())
+            .await
     }
 }

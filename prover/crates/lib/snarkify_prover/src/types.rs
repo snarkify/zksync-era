@@ -28,7 +28,8 @@ pub enum ProofType {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CreateTaskRequest<Input> {
+pub struct CreateTaskRequest<Input: Serialize> {
+    pub service_id: String,
     pub input: Input,
     pub proof_type: ProofType,
 }
