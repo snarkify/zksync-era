@@ -126,7 +126,7 @@ impl Prover {
             proof_type: proof_type,
         };
 
-        self.post_with_token::<CreateTaskRequest<Input>, TaskResponse>("tasks", &req)
+        self.post_with_token::<CreateTaskRequest<Input>, TaskResponse>("/v1/tasks", &req)
             .await
     }
 
@@ -134,7 +134,7 @@ impl Prover {
         &self,
         task_id: &str,
     ) -> anyhow::Result<TaskResponse> {
-        self.get_with_token::<TaskResponse>(format!("tasks/{task_id}").as_str())
+        self.get_with_token::<TaskResponse>(format!("/v1/tasks/{task_id}").as_str())
             .await
     }
 }
