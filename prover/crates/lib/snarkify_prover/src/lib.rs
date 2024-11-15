@@ -8,7 +8,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use types::{CreateTaskRequest, ProofType, ProveInput, TaskResponse};
+use types::{CreateTaskRequest, ProofType, TaskResponse};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {

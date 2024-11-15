@@ -129,12 +129,15 @@ impl CircuitProver {
                 "failed to get setup data for key {setup_data_key:?}"
             ))?
             .clone();
-        let snarkify_prover_clone = self.snarkify_prover.clone();
-        let task = tokio::task::spawn_blocking(move || {
-            let _span = tracing::info_span!("prove_circuit_proof", %block_number).entered();
-            Self::prove_circuit_proof(artifact, setup_data, snarkify_prover_clone)
-                .context("failed to prove circuit")
-        });
+
+        let task = {
+            let snarkify_prover = self.snarkify_prover.clone();
+            tokio::task::spawn_blocking(move || {
+                let _span = tracing::info_span!("prove_circuit_proof", %block_number).entered();
+                Self::prove_circuit_proof(artifact, setup_data, snarkify_prover)
+                    .context("failed to prove circuit")
+            })
+        };
 
         self.finish_task(
             job_id,
@@ -190,7 +193,7 @@ impl CircuitProver {
                     ProveInput {
                         circuit: circuit_wrapper.clone(),
                         witness_vector: witness_vector.clone(),
-                        setup_data: setup_data.clone(),
+                        // setup_data: setup_data.clone(),
                     },
                     ProofType::Batch,
                 )

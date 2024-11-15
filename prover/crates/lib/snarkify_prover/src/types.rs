@@ -44,7 +44,7 @@ pub struct CompressionInput {
 pub struct ProveInput {
     pub circuit: CircuitWrapper,
     pub witness_vector: WitnessVec<GoldilocksField>,
-    pub setup_data: Arc<GoldilocksGpuProverSetupData>,
+    // pub setup_data: Arc<GoldilocksGpuProverSetupData>,
 }
 
 /// Response for Get/Create tasks requests
