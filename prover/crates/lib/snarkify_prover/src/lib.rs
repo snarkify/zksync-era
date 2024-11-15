@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CloudProverConfig {
+pub struct Config {
     pub base_url: String,
     pub api_key: String,
     pub retry_count: u32,
@@ -19,16 +19,15 @@ pub struct CloudProverConfig {
 }
 
 #[derive(Clone, Debug)]
-pub struct SnarkifyProver {
+pub struct Prover {
     base_url: String,
     api_key: String,
-    service_id: String,
     send_timeout: Duration,
     client: ClientWithMiddleware,
 }
 
-impl SnarkifyProver {
-    pub fn new(cfg: CloudProverConfig, service_id: String) -> Self {
+impl Prover {
+    pub fn new(cfg: Config) -> Self {
         let retry_wait_duration = Duration::from_secs(cfg.retry_wait_time_sec);
         let retry_policy = ExponentialBackoff::builder()
             .retry_bounds(retry_wait_duration / 2, retry_wait_duration)
@@ -40,7 +39,6 @@ impl SnarkifyProver {
         Self {
             base_url: cfg.base_url,
             api_key: cfg.api_key,
-            service_id,
             send_timeout: Duration::from_secs(cfg.connection_timeout_sec),
             client,
         }

@@ -5,7 +5,7 @@ use std::{env, time::Duration};
 
 use anyhow::Context as _;
 use clap::Parser;
-use snarkify_prover::{CloudProverConfig, SnarkifyProver};
+use snarkify_prover::{Config, Prover as SnarkifyProver};
 use tokio::sync::{oneshot, watch};
 use zksync_core_leftovers::temp_config_store::{load_database_secrets, load_general_config};
 use zksync_env_config::object_store::ProverObjectStoreConfig;
@@ -79,14 +79,24 @@ async fn main() -> anyhow::Result<()> {
         Keystore::locate().with_setup_path(Some(prover_config.setup_data_path.clone().into()));
 
     // Snarkify
-    let cfg = CloudProverConfig {
-        base_url: "TODO".to_string(),
-        api_key: "TODO".to_string(),
-        retry_count: 0,
-        retry_wait_time_sec: 0,
-        connection_timeout_sec: 0,
+    let cfg = Config {
+        base_url: env::var("SNARKIFY_BASE_URL").unwrap_or("https://api.snarkify.io".to_string()),
+        api_key: env::var("SNARKIFY_API_KEY")
+            .expect("SNARKIFY_API_KEY environment variable not set"),
+        retry_count: env::var("SNARKIFY_RETRY_COUNT")
+            .unwrap_or("3".to_string())
+            .parse::<u32>()
+            .expect("Failed to parse SNARKIFY_RETRY_COUNT"),
+        retry_wait_time_sec: env::var("SNARKIFY_RETRY_WAIT_TIME_SEC")
+            .unwrap_or("5".to_string())
+            .parse::<u64>()
+            .expect("Failed to parse SNARKIFY_RETRY_COUNT"),
+        connection_timeout_sec: env::var("SNARKIFY_CONNECTION_TIMEOUT_SEC")
+            .unwrap_or("5".to_string())
+            .parse::<u64>()
+            .expect("Failed to parse SNARKIFY_CONNECTION_TIMEOUT_SEC"),
     };
-    let snarkify_prover = SnarkifyProver::new(cfg, "service_id".to_string());
+    let snarkify_prover = SnarkifyProver::new(cfg);
     let proof_compressor = ProofCompressor::new(
         blob_store,
         pool,
@@ -94,7 +104,7 @@ async fn main() -> anyhow::Result<()> {
         config.max_attempts,
         protocol_version,
         keystore,
-        snarkify_prover
+        snarkify_prover,
     );
 
     let (stop_sender, stop_receiver) = watch::channel(false);

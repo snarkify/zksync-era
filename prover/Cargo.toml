@@ -103,12 +103,10 @@ zksync_prover_keystore = { path = "crates/lib/keystore" }
 zksync_vk_setup_data_generator_server_fri = { path = "crates/bin/vk_setup_data_generator_server_fri" }
 zksync_prover_job_monitor = { path = "crates/bin/prover_job_monitor" }
 
-# snarkify dependencies
+# Snarkify dependencies
 snarkify_prover = { path = "crates/lib/snarkify_prover" }
 
 # for `perf` profiling
 [profile.perf]
 inherits = "release"
 debug = true
-
-

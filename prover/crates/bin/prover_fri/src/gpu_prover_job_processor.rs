@@ -54,6 +54,7 @@ pub mod gpu_prover {
         FromDisk,
     }
 
+    #[allow(dead_code)]
     pub struct Prover {
         keystore: Keystore,
         blob_store: Arc<dyn ObjectStore>,
@@ -73,6 +74,7 @@ pub mod gpu_prover {
     }
 
     impl Prover {
+        #[allow(dead_code)]
         pub fn new(
             keystore: Keystore,
             blob_store: Arc<dyn ObjectStore>,

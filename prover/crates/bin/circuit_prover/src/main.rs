@@ -1,4 +1,5 @@
 use std::{
+    env,
     path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
@@ -6,7 +7,7 @@ use std::{
 
 use anyhow::Context as _;
 use clap::Parser;
-use snarkify_prover::{CloudProverConfig, SnarkifyProver};
+use snarkify_prover::{Config, Prover as SnarkifyProver};
 use tokio_util::sync::CancellationToken;
 use zksync_circuit_prover::{
     Backoff, CircuitProver, FinalizationHintsCache, SetupDataCache, WitnessVectorGenerator,
@@ -87,14 +88,24 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Snarkify
-    let cfg = CloudProverConfig {
-        base_url: "TODO".to_string(),
-        api_key: "TODO".to_string(),
-        retry_count: 0,
-        retry_wait_time_sec: 0,
-        connection_timeout_sec: 0,
+    let cfg = Config {
+        base_url: env::var("SNARKIFY_BASE_URL").unwrap_or("https://api.snarkify.io".to_string()),
+        api_key: env::var("SNARKIFY_API_KEY")
+            .expect("SNARKIFY_API_KEY environment variable not set"),
+        retry_count: env::var("SNARKIFY_RETRY_COUNT")
+            .unwrap_or("3".to_string())
+            .parse::<u32>()
+            .expect("Failed to parse SNARKIFY_RETRY_COUNT"),
+        retry_wait_time_sec: env::var("SNARKIFY_RETRY_WAIT_TIME_SEC")
+            .unwrap_or("5".to_string())
+            .parse::<u64>()
+            .expect("Failed to parse SNARKIFY_RETRY_COUNT"),
+        connection_timeout_sec: env::var("SNARKIFY_CONNECTION_TIMEOUT_SEC")
+            .unwrap_or("5".to_string())
+            .parse::<u64>()
+            .expect("Failed to parse SNARKIFY_CONNECTION_TIMEOUT_SEC"),
     };
-    let snarkify_prover = SnarkifyProver::new(cfg, "service_id".to_string());
+    let snarkify_prover = SnarkifyProver::new(cfg);
 
     // NOTE: Prover Context is the way VRAM is allocated. If it is dropped, the claim on VRAM allocation is dropped as well.
     // It has to be kept until prover dies. Whilst it may be kept in prover struct, during cancellation, prover can `drop`, but the thread doing the processing can still be alive.

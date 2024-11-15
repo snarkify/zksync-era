@@ -46,11 +46,9 @@ pub struct ProveInput {
     pub setup_data: Arc<GoldilocksGpuProverSetupData>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CreateTaskResponse {}
-
+/// Response for Get/Create tasks requests
 #[derive(Deserialize, Debug)]
-pub struct GetTaskResponse {
+pub struct TaskResponse {
     /// Task ID in Snarkify platform. It can be UUID or an empty string.
     pub task_id: String,
     #[serde(deserialize_with = "deserialize_datetime")]

@@ -7,11 +7,8 @@ use anyhow::Context as _;
 use async_trait::async_trait;
 use circuit_sequencer_api::proof::FinalProof;
 use snarkify_prover::{
-    types::{
-        CompressionInput, CreateTaskRequest, CreateTaskResponse, GetTaskResponse, ProofType,
-        TaskState,
-    },
-    SnarkifyProver,
+    types::{CompressionInput, CreateTaskRequest, ProofType, TaskResponse, TaskState},
+    Prover as SnarkifyProver,
 };
 use tokio::task::JoinHandle;
 #[cfg(feature = "gpu")]
@@ -96,11 +93,13 @@ impl ProofCompressor {
                 },
                 proof_type: ProofType::Batch,
             };
-            snarkify_prover.post_with_token::<CreateTaskRequest<CompressionInput>, CreateTaskResponse>("tasks", &req).await?;
+            let res = snarkify_prover
+                .post_with_token::<CreateTaskRequest<CompressionInput>, TaskResponse>("tasks", &req)
+                .await?;
 
             loop {
                 match snarkify_prover
-                    .get_with_token::<GetTaskResponse>("tasks/[TASK_ID]")
+                    .get_with_token::<TaskResponse>(format!("tasks/{}", res.task_id).as_str())
                     .await
                 {
                     Ok(res) => {

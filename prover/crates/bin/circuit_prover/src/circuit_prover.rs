@@ -7,9 +7,9 @@ use shivini::{
 };
 use snarkify_prover::{
     types::{
-        CreateTaskRequest, CreateTaskResponse, GetTaskResponse, ProofType, ProveInput, TaskState,
+        CreateTaskRequest, TaskResponse, ProofType, ProveInput, TaskState,
     },
-    SnarkifyProver,
+    Prover as SnarkifyProver,
 };
 use tokio::{sync::mpsc::Receiver, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
@@ -196,14 +196,14 @@ impl CircuitProver {
         let rt = tokio::runtime::Runtime::new()?;
         rt.block_on(async {
             snarkify_prover
-                .post_with_token::<CreateTaskRequest<ProveInput>, CreateTaskResponse>("tasks", &req)
+                .post_with_token::<CreateTaskRequest<ProveInput>, TaskResponse>("tasks", &req)
                 .await
         })?;
 
         loop {
             let res = rt.block_on(async {
                 snarkify_prover
-                    .get_with_token::<GetTaskResponse>("tasks/[TASK_ID]")
+                    .get_with_token::<TaskResponse>("tasks/[TASK_ID]")
                     .await
             });
 
