@@ -114,22 +114,23 @@ impl Prover {
     }
 
     /// Create a new task on a service
-    pub async fn create_task<Resp: serde::de::DeserializeOwned, Input: Serialize>(
+    pub async fn create_task<Input: Serialize>(
         &self,
         service_id: &str,
         input: Input,
+        proof_type: ProofType,
     ) -> anyhow::Result<TaskResponse> {
         let req = CreateTaskRequest {
             service_id: service_id.to_string(),
             input: input,
-            proof_type: ProofType::Batch,
+            proof_type: proof_type,
         };
 
         self.post_with_token::<CreateTaskRequest<Input>, TaskResponse>("tasks", &req)
             .await
     }
 
-    pub async fn get_task<Resp: serde::de::DeserializeOwned>(
+    pub async fn get_task(
         &self,
         task_id: &str,
     ) -> anyhow::Result<TaskResponse> {

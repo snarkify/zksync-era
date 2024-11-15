@@ -6,9 +6,7 @@ use shivini::{
     ProverContextConfig,
 };
 use snarkify_prover::{
-    types::{
-        CreateTaskRequest, TaskResponse, ProofType, ProveInput, TaskState,
-    },
+    types::{ProofType, ProveInput, TaskResponse, TaskState},
     Prover as SnarkifyProver,
 };
 use tokio::{sync::mpsc::Receiver, task::JoinHandle};
@@ -183,42 +181,40 @@ impl CircuitProver {
         let block_number = prover_job.block_number;
 
         // snarkify begin
-        let req = CreateTaskRequest {
-            input: ProveInput {
-                circuit: circuit_wrapper.clone(),
-                witness_vector: witness_vector.clone(),
-                setup_data: setup_data.clone(),
-            },
-            proof_type: ProofType::Batch,
-        };
-
         // Run snarkify async function in tokio runtime to avoid changing this function to async.
         let rt = tokio::runtime::Runtime::new()?;
-        rt.block_on(async {
-            snarkify_prover
-                .post_with_token::<CreateTaskRequest<ProveInput>, TaskResponse>("tasks", &req)
-                .await
-        })?;
+        let result = rt.block_on(async {
+            let res = snarkify_prover
+                .create_task(
+                    "3b8b108e84014ce4bb6dbd202a9947fc", // hello world service
+                    ProveInput {
+                        circuit: circuit_wrapper.clone(),
+                        witness_vector: witness_vector.clone(),
+                        setup_data: setup_data.clone(),
+                    },
+                    ProofType::Batch,
+                )
+                .await;
 
-        loop {
-            let res = rt.block_on(async {
-                snarkify_prover
-                    .get_with_token::<TaskResponse>("tasks/[TASK_ID]")
-                    .await
-            });
+            let res = match res {
+                Ok(t) => t,
+                Err(e) => return Err(e),
+            };
 
-            match res {
-                Ok(res) => {
-                    if res.state == TaskState::Success {
-                        // deserialize res.proof to FinalProof
-                        break;
+            loop {
+                match snarkify_prover.get_task(&res.task_id).await {
+                    Ok(res) => {
+                        if res.state == TaskState::Success {
+                            // deserialize res.proof to FinalProof
+                            return Ok(res.proof);
+                        }
+                    }
+                    Err(_) => {
+                        continue;
                     }
                 }
-                Err(_) => {
-                    continue;
-                }
             }
-        }
+        });
         // snarkify end
 
         let (proof, circuit_id) =

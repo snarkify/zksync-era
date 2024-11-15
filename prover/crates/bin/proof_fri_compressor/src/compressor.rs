@@ -7,7 +7,7 @@ use anyhow::Context as _;
 use async_trait::async_trait;
 use circuit_sequencer_api::proof::FinalProof;
 use snarkify_prover::{
-    types::{CompressionInput, CreateTaskRequest, ProofType, TaskResponse, TaskState},
+    types::{CompressionInput, ProofType, TaskState},
     Prover as SnarkifyProver,
 };
 use tokio::task::JoinHandle;
@@ -86,22 +86,19 @@ impl ProofCompressor {
             let wrapper_config = DEFAULT_WRAPPER_CONFIG;
 
             // snarkify begin
-            let req = CreateTaskRequest {
-                input: CompressionInput {
-                    proof: proof.clone().into_inner(),
-                    scheduler_vk: scheduler_vk.clone(),
-                },
-                proof_type: ProofType::Batch,
-            };
             let res = snarkify_prover
-                .post_with_token::<CreateTaskRequest<CompressionInput>, TaskResponse>("tasks", &req)
+                .create_task(
+                    "3b8b108e84014ce4bb6dbd202a9947fc", // hello world service
+                    CompressionInput {
+                        proof: proof.clone().into_inner(),
+                        scheduler_vk: scheduler_vk.clone(),
+                    },
+                    ProofType::Batch,
+                )
                 .await?;
 
             loop {
-                match snarkify_prover
-                    .get_with_token::<TaskResponse>(format!("tasks/{}", res.task_id).as_str())
-                    .await
-                {
+                match snarkify_prover.get_task(&res.task_id).await {
                     Ok(res) => {
                         if res.state == TaskState::Success {
                             // deserialize res.proof to FinalProof
