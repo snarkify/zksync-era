@@ -70,7 +70,6 @@ pub mod gpu_prover {
         address: SocketAddress,
         zone: Zone,
         protocol_version: ProtocolSemanticVersion,
-        // Remote Snarkify Prover substitutes the local GPU prover.
     }
 
     impl Prover {
@@ -171,7 +170,6 @@ pub mod gpu_prover {
             };
 
             let started_at = Instant::now();
-
             let proof = gpu_prove_from_external_witness_data::<
                 DefaultTranscript,
                 DefaultTreeHasher,
@@ -192,7 +190,6 @@ pub mod gpu_prover {
                     prover_job.job_id, err
                 )
             });
-
             tracing::info!(
                 "Successfully generated gpu proof for job {} took: {:?}",
                 prover_job.job_id,
