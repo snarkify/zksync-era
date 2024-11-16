@@ -7962,6 +7962,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "clap 4.5.4",
+ "serde",
  "shivini",
  "snarkify_prover",
  "tokio",

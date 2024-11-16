@@ -186,7 +186,13 @@ impl CircuitProver {
         // snarkify begin
         // Run snarkify async function in tokio runtime to avoid changing this function to async.
         let rt = tokio::runtime::Runtime::new()?;
-        let result = rt.block_on(async {
+
+        #[derive(serde::Deserialize)]
+        struct Output {
+            proof: Proof,
+            circuit_id: u8,
+        }
+        let output = rt.block_on(async {
             let res = snarkify_prover
                 .create_task(
                     "3b8b108e84014ce4bb6dbd202a9947fc", // hello world service
@@ -208,8 +214,11 @@ impl CircuitProver {
                 match snarkify_prover.get_task(&res.task_id).await {
                     Ok(res) => {
                         if res.state == TaskState::Success {
-                            // deserialize res.proof to FinalProof
-                            return Ok(res.proof);
+                            // Output from circuit_prover service
+                            match bincode::deserialize::<Output>(res.proof.unwrap().as_bytes()) {
+                                Ok(output) => return Ok(output),
+                                Err(e) => return Err(e.into()),
+                            };
                         }
                     }
                     Err(_) => {
@@ -217,12 +226,9 @@ impl CircuitProver {
                     }
                 }
             }
-        });
+        })?;
+        let Output { proof, circuit_id } = output;
         // snarkify end
-
-        let (proof, circuit_id) =
-            Self::generate_proof(&circuit_wrapper, witness_vector, &setup_data)
-                .context(format!("failed to generate proof for job id {job_id}"))?;
 
         Self::verify_proof(&circuit_wrapper, &proof, &setup_data.vk).context(format!(
             "failed to verify proof with job_id {job_id}, circuit_id: {circuit_id}"

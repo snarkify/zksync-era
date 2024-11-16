@@ -11,8 +11,10 @@ use snarkify_prover::{
     Prover as SnarkifyProver,
 };
 use tokio::task::JoinHandle;
+use wrapper_prover::{Bn256, ZkSyncSnarkWrapperCircuit};
 #[cfg(feature = "gpu")]
 use wrapper_prover::{GPUWrapperConfigs, WrapperProver, DEFAULT_WRAPPER_CONFIG};
+use zkevm_test_harness::franklin_crypto::bellman::plonk::better_better_cs::proof::Proof;
 #[cfg(not(feature = "gpu"))]
 use zkevm_test_harness::proof_wrapper_utils::WrapperConfig;
 #[allow(unused_imports)]
@@ -97,12 +99,22 @@ impl ProofCompressor {
                 )
                 .await?;
 
+            #[derive(serde::Deserialize)]
+            struct Output {
+                proof: Proof<Bn256, ZkSyncSnarkWrapperCircuit>,
+            }
+
             loop {
                 match snarkify_prover.get_task(&res.task_id).await {
                     Ok(res) => {
                         if res.state == TaskState::Success {
-                            // deserialize res.proof to FinalProof
-                            break;
+                            if res.state == TaskState::Success {
+                                match bincode::deserialize::<Output>(res.proof.unwrap().as_bytes())
+                                {
+                                    Ok(output) => break output.proof,
+                                    Err(e) => return Err(e.into()),
+                                };
+                            }
                         }
                     }
                     Err(_) => {
@@ -111,16 +123,6 @@ impl ProofCompressor {
                     }
                 }
             }
-            // snarkify end
-
-            let mut prover = WrapperProver::<GPUWrapperConfigs>::new(&crs, wrapper_config).unwrap();
-
-            prover
-                .generate_setup_data(scheduler_vk.into_inner())
-                .unwrap();
-            prover.generate_proofs(proof.into_inner()).unwrap();
-
-            prover.get_wrapper_proof().unwrap()
         };
         #[cfg(not(feature = "gpu"))]
         let wrapper_proof = {

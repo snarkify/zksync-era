@@ -1,15 +1,12 @@
-use std::sync::Arc;
-
 use chrono::{DateTime, NaiveDateTime, Utc};
 use circuit_definitions::{
-    boojum::{cs::implementations::witness::WitnessVec, field::goldilocks::GoldilocksField},
+    boojum::{cs::implementations::{proof::Proof, witness::WitnessVec}, field::goldilocks::GoldilocksField},
     circuit_definitions::recursion_layer::{
         ZkSyncRecursionLayerVerificationKey, ZkSyncRecursionProof,
     },
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use zksync_prover_fri_types::CircuitWrapper;
-use zksync_prover_keystore::GoldilocksGpuProverSetupData;
 
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
