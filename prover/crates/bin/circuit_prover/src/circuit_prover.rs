@@ -199,7 +199,7 @@ impl CircuitProver {
                     ProveInput {
                         circuit: circuit_wrapper.clone(),
                         witness_vector: witness_vector.clone(),
-                        // setup_data: setup_data.clone(),
+                        setup_data: setup_data.clone(),
                     },
                     ProofType::Batch,
                 )

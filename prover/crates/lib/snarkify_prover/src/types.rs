@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, NaiveDateTime, Utc};
 use circuit_definitions::{
     boojum::{cs::implementations::{proof::Proof, witness::WitnessVec}, field::goldilocks::GoldilocksField},
@@ -7,6 +9,7 @@ use circuit_definitions::{
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use zksync_prover_fri_types::CircuitWrapper;
+use zksync_prover_keystore::GoldilocksGpuProverSetupData;
 
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
@@ -41,7 +44,7 @@ pub struct CompressionInput {
 pub struct ProveInput {
     pub circuit: CircuitWrapper,
     pub witness_vector: WitnessVec<GoldilocksField>,
-    // pub setup_data: Arc<GoldilocksGpuProverSetupData>,
+    pub setup_data: Arc<GoldilocksGpuProverSetupData>,
 }
 
 /// Response for Get/Create tasks requests
