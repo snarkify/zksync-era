@@ -40,3 +40,4 @@ shivini = { workspace = true, features = [
     "zksync",
 ] }
 zkevm_test_harness.workspace = true
+serde_json.workspace = true
