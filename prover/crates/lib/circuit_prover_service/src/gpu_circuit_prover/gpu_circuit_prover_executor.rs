@@ -59,7 +59,9 @@ impl Executor for GpuCircuitProverExecutor {
             .context("failed to gpu prove circuit")?;
         tracing::info!(
             "Circuit prover proof size: {}",
-            serde_json::to_string(&proof_wrapper).context("failed to serialize proof wrapper")?
+            serde_json::to_string(&proof_wrapper)
+                .context("failed to serialize proof wrapper")?
+                .len()
         );
         tracing::info!(
             "Finished executing gpu circuit prover job {}, on batch {}, for circuit {}, at round {} after {:?}",
