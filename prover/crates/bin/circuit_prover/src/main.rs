@@ -1,12 +1,12 @@
+use anyhow::Context as _;
+use clap::Parser;
+use shivini::{ProverContext, ProverContextConfig};
+use std::collections::HashMap;
 use std::{
     path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
 };
-
-use anyhow::Context as _;
-use clap::Parser;
-use shivini::{ProverContext, ProverContextConfig};
 use tokio_util::sync::CancellationToken;
 use zksync_circuit_prover::{FinalizationHintsCache, SetupDataCache, PROVER_BINARY_METRICS};
 use zksync_circuit_prover_service::job_runner::{circuit_prover_runner, WvgRunnerBuilder};
@@ -168,6 +168,25 @@ fn load_configs(
     tracing::info!("Loaded configs.");
     Ok((observability_config, prover_config, object_store_config))
 }
+
+fn serialize_with_string_keys<K, V>(map: &HashMap<K, V>) -> Result<usize, anyhow::Error>
+where
+    K: serde::Serialize,
+    V: serde::Serialize,
+{
+    // Transform the map so that all keys are strings
+    let transformed_map: HashMap<String, &V> = map
+        .iter()
+        .map(|(key, value)| (serde_json::to_string(key).unwrap(), value))
+        .collect();
+
+    // Serialize the transformed map
+    let serialized_map = serde_json::to_string(&transformed_map)
+        .context("Failed to serialize map with string keys")?;
+
+    Ok(serialized_map.len())
+}
+
 /// Loads resources necessary for proving.
 /// - connection pool - necessary to pick & store jobs from database
 /// - object store - necessary  for loading and storing artifacts to object store
@@ -226,13 +245,9 @@ async fn load_resources(
         .await
         .context("failed to load finalization hints mapping")?;
 
-    let hint_map_size = serde_json::to_string(&finalization_hints)
-        .context("failed to serialize finalization hints")?
-        .len();
+    let hint_map_size = serialize_with_string_keys(&finalization_hints)?;
     tracing::info!("Finalization hints map item size: {} bytes", hint_map_size);
-    let setup_map_size = serde_json::to_string(&setup_data_cache)
-        .context("failed to serialize setup data cache")?
-        .len();
+    let setup_map_size = serialize_with_string_keys(&setup_data_cache)?;
     tracing::info!("Setup data cache map item size: {} bytes", setup_map_size);
 
     tracing::info!("Finished loading mappings from disk.");
