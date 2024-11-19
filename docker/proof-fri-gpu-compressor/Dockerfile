@@ -3,7 +3,7 @@ FROM nvidia/cuda:12.2.0-devel-ubuntu22.04 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ARG CUDA_ARCH=89
+ARG CUDA_ARCH=86
 ENV CUDAARCHS=${CUDA_ARCH}
 # set of args for use of sccache
 ARG SCCACHE_GCS_BUCKET=""
@@ -55,9 +55,9 @@ FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
 RUN apt-get update && apt-get install -y curl libpq5 ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # copy VK required for proof wrapping
-COPY prover/data/keys/ /prover/data/keys
+# COPY prover/data/keys/ /prover/data/keys
 
-COPY setup_2\^24.key /setup_2\^24.key
+# COPY setup_2\^24.key /setup_2\^24.key
 
 ENV CRS_FILE=/setup_2\^24.key
 

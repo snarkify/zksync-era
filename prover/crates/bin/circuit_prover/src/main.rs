@@ -224,7 +224,16 @@ async fn load_resources(
         .load_all_finalization_hints_mapping()
         .await
         .context("failed to load finalization hints mapping")?;
-
+    let hint_map_size = std::mem::size_of_val(&finalization_hints);
+    tracing::info!(
+        "Finalization hints map occupies {} bytes in heap",
+        hint_map_size
+    );
+    let setup_map_size = std::mem::size_of_val(&setup_data_cache);
+    tracing::info!(
+        "Setup data cache map occupies {} bytes in heap",
+        setup_map_size
+    );
     tracing::info!("Finished loading mappings from disk.");
 
     Ok((
