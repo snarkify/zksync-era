@@ -153,12 +153,10 @@ impl<ML: WitnessVectorMetadataLoader> JobPicker for WitnessVectorGeneratorJobPic
         };
         let circuit_json = serde_json::to_string(&payload.circuit).unwrap();
         let hints_json = serde_json::to_string(&payload.finalization_hints).unwrap();
-        let metadata_json = serde_json::to_string(&metadata).unwrap();
         tracing::info!(
-            "WVG pick job: circuit len: {}, hints len: {}, metadata len: {}",
+            "WVG pick job: circuit len: {}, hints len: {}",
             circuit_json.len(),
-            hints_json.len(),
-            metadata_json.len()
+            hints_json.len()
         );
         tracing::info!(
             "Finished picking witness vector generator job {}, on batch {}, for circuit {}, at round {} in {:?}",
