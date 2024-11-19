@@ -102,14 +102,15 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let light_wvg_runner = builder.light_wvg_runner(opt.light_wvg_count);
-    let heavy_wvg_runner = builder.heavy_wvg_runner(opt.heavy_wvg_count);
+    //let heavy_wvg_runner = builder.heavy_wvg_runner(opt.heavy_wvg_count);
 
-    tasks.extend(light_wvg_runner.run());
-    tasks.extend(heavy_wvg_runner.run());
+    //tasks.extend(light_wvg_runner.run());
+    //tasks.extend(heavy_wvg_runner.run());
 
     // necessary as it has a connection_pool which will keep 1 connection active by default
     drop(builder);
 
+    /*
     let circuit_prover_runner = circuit_prover_runner(
         connection_pool,
         object_store,
@@ -120,6 +121,7 @@ async fn main() -> anyhow::Result<()> {
     );
 
     tasks.extend(circuit_prover_runner.run());
+    */
 
     let mut tasks = ManagedTasks::new(tasks);
     tokio::select! {
