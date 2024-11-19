@@ -2,7 +2,7 @@ FROM nvidia/cuda:12.2.0-devel-ubuntu22.04 AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ARG CUDA_ARCH=89
+ARG CUDA_ARCH=86
 ENV CUDAARCHS=${CUDA_ARCH}
 
 # set of args for use of sccache
